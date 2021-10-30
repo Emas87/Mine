@@ -1,0 +1,87 @@
+[
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Plugins\\\\SimplexNoise\\\\Source\\\\SimplexNoise\\\\Private\\\\SimplexNoiseBPLibrary.cpp",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\SimplexNoise.1.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Plugins\\\\SimplexNoise\\\\Source\\\\SimplexNoise\\\\Private\\\\SimplexNoiseModule.cpp",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\SimplexNoise.1.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Plugins\\\\SimplexNoise\\\\Source\\\\SimplexNoise\\\\Private\\\\SimplexNoisePrivatePCH.h",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\SimplexNoise.1.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Plugins\\\\SimplexNoise\\\\Source\\\\SimplexNoise\\\\Public\\\\ISimplexNoise.h",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\SimplexNoise.1.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Plugins\\\\SimplexNoise\\\\Source\\\\SimplexNoise\\\\Public\\\\SimplexNoiseBPLibrary.h",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\SimplexNoise.1.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Plugins\\\\SimplexNoise\\\\Source\\\\SimplexNoise\\\\SimplexNoise.Build.cs",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\SimplexNoise.1.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\Mine.Build.cs",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\Mine.cpp",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\Mine.h",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\MineCube.cpp",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\MineCube.h",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\MineGameModeBase.cpp",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\MineGameModeBase.h",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\MyClass.cpp",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\MyClass.h",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\PlayerCharacter.cpp",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	},
+	{
+		"file": "C:\\\\Users\\\\ema87\\\\Documents\\\\Unreal Projects\\\\Mine\\\\Source\\\\Mine\\\\PlayerCharacter.h",
+		"command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe @\"C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default\\Mine.211.rsp\"",
+		"directory": "C:\\Program Files\\Epic Games\\UE_4.27\\Engine\\Source"
+	}
+]

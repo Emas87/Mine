@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "MineEditor Editor Win64 Development (Mine)",
+            "intelliSenseMode": "msvc-x64",
+            "compileCommands": "C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Mine.json",
+            "cStandard": "c17",
+            "cppStandard": "c++17"
+        },
+        {
+            "name": "Win32",
+            "intelliSenseMode": "msvc-x64",
+            "compileCommands": "C:\\Users\\ema87\\Documents\\Unreal Projects\\Mine\\.vscode\\compileCommands_Default.json",
+            "cStandard": "c17",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
