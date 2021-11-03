@@ -65,36 +65,6 @@ void APlayerCharacter::Jump()
 	Super::Jump();
 }
 
-void APlayerCharacter::Tool() 
-{
-	//call action of cube class
-	// For now test the destroy blocks
-	
-	PutBlock();
-	return;
-	FHitResult OutHit;
-	FVector HitDirection;
-	AController* OwnerController = GetOwnerController();
-	if(OwnerController == nullptr){
-		return;
-	}
-
-	bool bSuccess = ViewTrace(OutHit, HitDirection, OwnerController);
-	
-	if(bSuccess){
-		
-		DrawDebugPoint(GetWorld(), OutHit.Location, 40, FColor::White, true);
-
-		//Getting instance to be deleted
-		UInstancedStaticMeshComponent* HitComponent = Cast<UInstancedStaticMeshComponent>(OutHit.GetComponent());
-		
-		if(!HitComponent){
-			return;
-		}
-		int32 Item = OutHit.Item;
-		HitComponent->RemoveInstance(Item);
-	}
-}
 
 bool APlayerCharacter::ViewTrace(FHitResult& OutHit, FVector& HitDirection, AController* OwnerController) 
 {
@@ -119,6 +89,45 @@ AController* APlayerCharacter::GetOwnerController() const
 	AController* OwnerController = this->GetController();
 	return OwnerController;
 }
+
+
+void APlayerCharacter::Tool() 
+{
+	//call action of cube class
+	// For now test the destroy blocks
+	
+	PutBlock();
+	return;
+	FHitResult OutHit;
+	FVector HitDirection;
+	AController* OwnerController = GetOwnerController();
+	if(OwnerController == nullptr){
+		return;
+	}
+
+	bool bSuccess = ViewTrace(OutHit, HitDirection, OwnerController);
+	
+	if(bSuccess){
+		
+		DrawDebugPoint(GetWorld(), OutHit.Location, 40, FColor::White, true);
+
+		//Getting instance to be deleted
+		UInstancedStaticMeshComponent* HitComponent = Cast<UInstancedStaticMeshComponent>(OutHit.GetComponent());
+		AMC_Chunk* HitChunk = Cast<AMC_Chunk>(OutHit.GetActor());
+		
+		if(!HitComponent || !HitChunk){
+			return;
+		}
+		int32 Item = OutHit.Item;
+		FVector VoxelLocation = HitChunk->Instance2Coord[Item];
+		FInstancesArray InstanceList = HitChunk->Coord2Array[VoxelLocation];
+		for(int32 Instance : InstanceList.array){
+			HitComponent->RemoveInstance(Instance);
+		}
+		
+	}
+}
+
 
 void APlayerCharacter::PutBlock(){
 
@@ -156,16 +165,14 @@ void APlayerCharacter::PutBlock(){
 		float VoxelSize = HitChunk->VoxelSize;
 
 		int32 Item = OutHit.Item;
-		
-		FTransform VoxelTransform;
-		bSuccess = HitComponent->GetInstanceTransform(OutHit.Item, VoxelTransform, true);
-		if(!bSuccess){
-			UE_LOG(LogTemp, Warning, TEXT("Couldn't get Voxel Transform"));
-			return;
-		}
 
+		FVector VoxelLocation = HitChunk->Instance2Coord[Item];
+		//FInstancesArray InstanceList = HitChunk->Coord2Array[VoxelLocation];
+		//for(int32 Instance : InstanceList.array){
+		//	HitComponent->RemoveInstance(Instance);
+		//}
+		
 		FVector HitLocation = OutHit.Location;
-		FVector VoxelLocation = VoxelTransform.GetLocation();
 		FVector NewLocation = VoxelLocation;
 		UE_LOG(LogTemp, Warning, TEXT("VoxelLocation: %s"), *VoxelLocation.ToString());
 		UE_LOG(LogTemp, Warning, TEXT("HitLocation: %s"), *HitLocation.ToString());
@@ -199,8 +206,19 @@ void APlayerCharacter::PutBlock(){
 
 		//TODO Check if user is in the range
 		
-		
-		NewBlock->AddInstanceWorldSpace(Transform);
+		TArray<int32> instances;
+		instances.Init(0, 6);
+		instances[0] = HitChunk->AddVoxelSide(TEXT("Top"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
+		instances[1] = HitChunk->AddVoxelSide(TEXT("Bottom"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
+		instances[2] = HitChunk->AddVoxelSide(TEXT("Front"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
+		instances[3] = HitChunk->AddVoxelSide(TEXT("Back"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
+		instances[4] = HitChunk->AddVoxelSide(TEXT("Right"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
+		instances[5] = HitChunk->AddVoxelSide(TEXT("Left"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
+
+		FInstancesArray ArrayStruct;
+		ArrayStruct.array = instances;
+
+		HitChunk->Coord2Array.Add(Transform.GetLocation(), ArrayStruct);
 
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("It didn't hit anything"));

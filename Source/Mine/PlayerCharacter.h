@@ -37,6 +37,6 @@ public:
 	void Tool();
 	void PutBlock();
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(BlueprintReadWrite, Category = "Code")
 	int MaxRange = 300;
 };

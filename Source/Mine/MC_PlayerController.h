@@ -14,4 +14,8 @@ class MINE_API AMC_PlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	
+public:	
+	UPROPERTY(BlueprintReadWrite, Category = "Code")
+	int MaxRange = 300;
+	
 };
