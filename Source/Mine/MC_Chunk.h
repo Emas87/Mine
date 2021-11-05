@@ -12,20 +12,53 @@ USTRUCT()
 struct FSide
 {
 	GENERATED_BODY()
-	int32 InstanceIndex = -1;
 	FString Name;
 	FVector VoxelCenter;
 	FVector SideCenter;
 	FQuat SideRotation;
-	FVoxel* Parent;
 	FSide* Next;
+	FVoxel* Parent;
 	UInstancedStaticMeshComponent* StaticMesh;
 	AMC_Chunk* Chunk;
+	TDoubleLinkedListNode<int32>* InstanceIndex;
+
+	FSide(){
+		InstanceIndex = nullptr;
+		Name = "";
+		VoxelCenter = FVector(0);
+		SideCenter = FVector(0);
+		SideRotation = FQuat(FRotator(0,0,0));
+		Next = nullptr;
+		Parent = nullptr;
+		StaticMesh = nullptr;
+		Chunk = nullptr;		
+	}
+
+	FString ToString(){
+		FString print =  "Name: " + Name + "; " + "VoxelCenter: " + VoxelCenter.ToString() + "; " + "SideCenter: " + SideCenter.ToString() + "; " 
+		+ "SideRotation: " + SideRotation.ToString() + "; " ;
+		if(Next==nullptr){
+			print = print + "Next: nullptr; ";
+		}
+		if(Parent==nullptr){
+			print = print + "Parent: nullptr; ";
+		}
+		if(StaticMesh==nullptr){
+			print = print + "StaticMesh: nullptr; ";
+		}
+		if(Chunk==nullptr){
+			print = print + "Chunk: nullptr; ";
+		}
+		return print;
+	}
 
 	~FSide(){
-		if(Next != nullptr){
-			Next->Next = nullptr;
-		}	
+		//
+		/*if(Next != nullptr){
+			//TODO fix when FSide is destroyed
+			FSide TempSide = *Next;
+			TempSide.Next = nullptr;
+		}*/
 	}
 };
 
@@ -35,19 +68,17 @@ struct FVoxel
 	GENERATED_BODY()
 	FVector VoxelCenter;
 	TArray<FSide*> Sides;
-	//Sides.Init(nullptr, 6);
-	/*FSide* Top;
-	FSide* Bottom;
-	FSide* Front;
-	FSide* Back;
-	FSide* Right;
-	FSide* Left;*/
 
 	FVoxel(){
 		Sides.Init(nullptr, 6);
+		VoxelCenter = FVector(0,0,0);
 	}
 
 	~FVoxel(){
+		UE_LOG(LogTemp, Warning, TEXT("Deleting Sides"));
+		for(int i = 0; i < 6; i++){
+			delete Sides[i];
+		}
 		Sides.Empty();
 	}
 
@@ -61,6 +92,8 @@ class MINE_API AMC_Chunk : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AMC_Chunk();
+	~AMC_Chunk();
+
 
 protected:
 	// Called when the game starts or when spawned
@@ -78,8 +111,13 @@ public:
 
 	TMap<FString, FSide*> Instance2Side;
 
-	FSide AddVoxelSide(FString Side, FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* StaticMesh);
+	TArray<FVoxel*> Voxels;
 
+	TMap<UInstancedStaticMeshComponent,TDoubleLinkedList<int32>> Indexes;
+
+	FSide* AddVoxelSide(FString Side, FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* StaticMesh, bool AddInstance=true );
+
+	UFUNCTION(BlueprintCallable, Category = "Code")
 	void AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* StaticMesh);
 
 	void RemoveVoxel(int32 index, UInstancedStaticMeshComponent* StaticMesh);

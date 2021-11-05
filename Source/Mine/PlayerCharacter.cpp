@@ -127,8 +127,9 @@ void APlayerCharacter::Remove()
 			UE_LOG(LogTemp, Error, TEXT("No ACtor or Component"));
 			return;
 		}
-		
 		HitChunk->RemoveVoxel(OutHit.Item, HitComponent);			
+	} else {
+		UE_LOG(LogTemp, Warning, TEXT("It didn't hit anything"));
 	}
 }
 
@@ -162,6 +163,11 @@ void APlayerCharacter::PutBlock(){
 		// Material 0
 		// TODO: Block Depends on the block selected in the tool bar
 		UInstancedStaticMeshComponent* NewBlock = HitChunk->ISMs[0];
+
+		if(!NewBlock){
+			UE_LOG(LogTemp, Error, TEXT("No Static Mesh"));
+			return;
+		}	
 
 		// Get location and Snap location of new voxel
 		FTransform Transform;
