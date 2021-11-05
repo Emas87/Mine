@@ -16,3 +16,5 @@ Mine.uproject
 Plugins
 Saved
 Script
+.vscode/compileCommands_Mine/*
+.vscode/compileCommands_Default/*
