@@ -37,6 +37,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAxis(TEXT("LookRight"), this, &APlayerCharacter::LookRight);
 	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed ,this, &APlayerCharacter::Jump);	
 	PlayerInputComponent->BindAction(TEXT("Tool"), EInputEvent::IE_Pressed ,this, &APlayerCharacter::Tool);
+	PlayerInputComponent->BindAction(TEXT("Remove"), EInputEvent::IE_Pressed ,this, &APlayerCharacter::Remove);
 
 }
 
@@ -65,7 +66,6 @@ void APlayerCharacter::Jump()
 	Super::Jump();
 }
 
-
 bool APlayerCharacter::ViewTrace(FHitResult& OutHit, FVector& HitDirection, AController* OwnerController) 
 {
 	
@@ -90,7 +90,6 @@ AController* APlayerCharacter::GetOwnerController() const
 	return OwnerController;
 }
 
-
 void APlayerCharacter::Tool() 
 {
 	//call action of cube class
@@ -98,10 +97,19 @@ void APlayerCharacter::Tool()
 	
 	PutBlock();
 	return;
+
+}
+
+void APlayerCharacter::Remove() 
+{
+	//call action of cube class
+	// For now test the destroy blocks
+
 	FHitResult OutHit;
 	FVector HitDirection;
 	AController* OwnerController = GetOwnerController();
 	if(OwnerController == nullptr){
+		UE_LOG(LogTemp, Error, TEXT("No OwnerController Found"));
 		return;
 	}
 
@@ -116,18 +124,13 @@ void APlayerCharacter::Tool()
 		AMC_Chunk* HitChunk = Cast<AMC_Chunk>(OutHit.GetActor());
 		
 		if(!HitComponent || !HitChunk){
+			UE_LOG(LogTemp, Error, TEXT("No ACtor or Component"));
 			return;
 		}
-		int32 Item = OutHit.Item;
-		FVector VoxelLocation = HitChunk->Instance2Coord[Item];
-		FInstancesArray InstanceList = HitChunk->Coord2Array[VoxelLocation];
-		for(int32 Instance : InstanceList.array){
-			HitComponent->RemoveInstance(Instance);
-		}
 		
+		HitChunk->RemoveVoxel(OutHit.Item, HitComponent);			
 	}
 }
-
 
 void APlayerCharacter::PutBlock(){
 
@@ -135,6 +138,7 @@ void APlayerCharacter::PutBlock(){
 	FVector HitDirection;
 	AController* OwnerController = GetOwnerController();
 	if(OwnerController == nullptr){
+		UE_LOG(LogTemp, Error, TEXT("No OwnerController Found"));
 		return;
 	}
 
@@ -151,7 +155,7 @@ void APlayerCharacter::PutBlock(){
 		AMC_Chunk* HitChunk = Cast<AMC_Chunk>(OutHit.GetActor());
 
 		if(!HitComponent || !HitChunk){
-			UE_LOG(LogTemp, Warning, TEXT("No ACtor or Component"));
+			UE_LOG(LogTemp, Error, TEXT("No ACtor or Component"));
 			return;
 		}		
 
@@ -164,61 +168,47 @@ void APlayerCharacter::PutBlock(){
 		
 		float VoxelSize = HitChunk->VoxelSize;
 
-		int32 Item = OutHit.Item;
+		FString Item = FString::FromInt(OutHit.Item) + " " + HitComponent->GetName();
 
-		FVector VoxelLocation = HitChunk->Instance2Coord[Item];
-		//FInstancesArray InstanceList = HitChunk->Coord2Array[VoxelLocation];
-		//for(int32 Instance : InstanceList.array){
-		//	HitComponent->RemoveInstance(Instance);
-		//}
-		
+		if(!HitChunk->Instance2Side.Contains(Item)){
+			UE_LOG(LogTemp, Error, TEXT("Missing Instance adn Component Combination: %s"), *Item);
+			return;
+		}
+		FSide* Side = HitChunk->Instance2Side[Item];
+		if(Side == nullptr){
+			return;
+		}
+		FVector VoxelLocation = Side->VoxelCenter;
+	
+		// Hit Location is Global, not local
 		FVector HitLocation = OutHit.Location;
+		//FVector WorldLocation = VoxelLocation - HitChunk->GetActorLocation();
 		FVector NewLocation = VoxelLocation;
-		UE_LOG(LogTemp, Warning, TEXT("VoxelLocation: %s"), *VoxelLocation.ToString());
-		UE_LOG(LogTemp, Warning, TEXT("HitLocation: %s"), *HitLocation.ToString());
 
 		float XDiff = VoxelLocation.X - HitLocation.X;
 		float YDiff = VoxelLocation.Y - HitLocation.Y;
 		float ZDiff = VoxelLocation.Z - HitLocation.Z;
 		if( XDiff >= VoxelSize/2 ){
 			NewLocation.X = VoxelLocation.X - VoxelSize;
-			UE_LOG(LogTemp, Warning, TEXT("Add to X: "));
 		} else if( -XDiff >= VoxelSize/2 ){
 			NewLocation.X = VoxelLocation.X + VoxelSize;
-			UE_LOG(LogTemp, Warning, TEXT("Add to X: "));
 		} else if( YDiff >= VoxelSize/2 ){
 			NewLocation.Y = VoxelLocation.Y - VoxelSize;
-			UE_LOG(LogTemp, Warning, TEXT("Add to Y: "));
 		} else if( -YDiff >= VoxelSize/2 ){
 			NewLocation.Y = VoxelLocation.Y + VoxelSize;
-			UE_LOG(LogTemp, Warning, TEXT("Add to Y: "));
 		} else if( ZDiff >= VoxelSize/2 ){
 			NewLocation.Z = VoxelLocation.Z - VoxelSize;
-			UE_LOG(LogTemp, Warning, TEXT("Add to Z: "));
 		} else if( -ZDiff >= VoxelSize/2 ){
 			NewLocation.Z = VoxelLocation.Z + VoxelSize;
-			UE_LOG(LogTemp, Warning, TEXT("Add to Z: "));
 		} else {
+			UE_LOG(LogTemp, Error, TEXT("Diff isreally weird"));		
 			return;
 		}
-		UE_LOG(LogTemp, Warning, TEXT("NewLocation: %s"), *NewLocation.ToString());
+		// UE_LOG(LogTemp, Warning, TEXT("NewLocation: %s"), *NewLocation.ToString());
 		Transform.SetLocation(NewLocation);
 
-		//TODO Check if user is in the range
-		
-		TArray<int32> instances;
-		instances.Init(0, 6);
-		instances[0] = HitChunk->AddVoxelSide(TEXT("Top"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
-		instances[1] = HitChunk->AddVoxelSide(TEXT("Bottom"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
-		instances[2] = HitChunk->AddVoxelSide(TEXT("Front"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
-		instances[3] = HitChunk->AddVoxelSide(TEXT("Back"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
-		instances[4] = HitChunk->AddVoxelSide(TEXT("Right"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
-		instances[5] = HitChunk->AddVoxelSide(TEXT("Left"), Transform.GetLocation(), Transform.GetRotation().Rotator(), NewBlock);
-
-		FInstancesArray ArrayStruct;
-		ArrayStruct.array = instances;
-
-		HitChunk->Coord2Array.Add(Transform.GetLocation(), ArrayStruct);
+		// TODO Check if user is in the range
+		HitChunk->AddVoxel(Transform, NewBlock);
 
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("It didn't hit anything"));

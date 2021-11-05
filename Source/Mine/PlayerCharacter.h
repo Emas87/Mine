@@ -35,6 +35,7 @@ public:
 	void LookRight(float YawValue);
 	void Jump();	
 	void Tool();
+	void Remove();
 	void PutBlock();
 
 	UPROPERTY(BlueprintReadWrite, Category = "Code")
