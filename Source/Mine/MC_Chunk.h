@@ -68,8 +68,14 @@ struct FVoxel
 	TArray<FSide*> Sides;
 
 	FVoxel(){
-		Sides.Init(nullptr, 6);
 		VoxelCenter = FVector(0,0,0);
+		Sides.Init(nullptr, 6);
+		Sides[0] = nullptr;
+		Sides[1] = nullptr;
+		Sides[2] = nullptr;
+		Sides[3] = nullptr;
+		Sides[4] = nullptr;
+		Sides[5] = nullptr;		
 	}
 
 	~FVoxel(){
@@ -107,7 +113,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Code", Meta = (ExposeOnSpawn=true, InstanceEditable=true))
 	float VoxelSize = 100;
 
-	TMap<FVector, FSide*> Vector2Side;
+	TMap<FString, FSide*> Vector2Side;
 
 	TArray<FVoxel*> Voxels;
 
@@ -120,7 +126,9 @@ public:
 
 	void RemoveVoxelSide(FSide* Side);
 
-	void RemoveVoxel(FVector Location, UInstancedStaticMeshComponent* StaticMesh);
+	void RemoveVoxel(FVector Location, FQuat Rotation, UInstancedStaticMeshComponent* StaticMesh);
 	
 	void MapSides(FSide* Side, FHitResult OutHit);
+
+	FString FormatRotator(FRotator Rotator);
 };

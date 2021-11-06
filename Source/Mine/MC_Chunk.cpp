@@ -50,6 +50,7 @@ void AMC_Chunk::RedrawVoxelSide(FSide* Side){
 
 FSide* AMC_Chunk::AddVoxelSide(FString Side, FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* StaticMesh, bool AddInstance){
 	FSide* NewSide = new FSide;
+	int32 InstanceIndex;
 	if(StaticMesh == nullptr){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: StaticMesh is null"));
 		return NewSide;
@@ -79,11 +80,22 @@ FSide* AMC_Chunk::AddVoxelSide(FString Side, FVector Location, FRotator Rotation
 	}
 
 	if(AddInstance){
-		StaticMesh->AddInstance(Transform);
+		InstanceIndex = StaticMesh->AddInstance(Transform);
+		FTransform OutInstanceTransform;
+		StaticMesh->GetInstanceTransform(InstanceIndex, OutInstanceTransform, false);
+		FVector SideCenter = OutInstanceTransform.GetLocation();
+		FQuat SideRotation = OutInstanceTransform.GetRotation();
+
+		if(FormatRotator(SideRotation.Rotator()) != FormatRotator(Transform.GetRotation().Rotator())){
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Rotator are different: \n%s\n%s"), 
+			*FormatRotator(SideRotation.Rotator()), *FormatRotator(Transform.GetRotation().Rotator()));
+		}
 	}
 
-	if(Vector2Side.Contains(Transform.GetLocation())){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Vector2Side Already contains: %s "), *Transform.GetLocation().ToString());
+	FString LocationRotation = Transform.GetLocation().ToString() + "|" + FormatRotator(Transform.GetRotation().Rotator());
+
+	if(Vector2Side.Contains(LocationRotation)){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Vector2Side Already contains: %s"), *LocationRotation);
 		return NewSide;
 	}
 
@@ -93,7 +105,7 @@ FSide* AMC_Chunk::AddVoxelSide(FString Side, FVector Location, FRotator Rotation
 	NewSide->SideRotation = Transform.GetRotation();
 	NewSide->StaticMesh = StaticMesh;
 	NewSide->Chunk = this;
-	Vector2Side.Add( Transform.GetLocation() , NewSide);
+	Vector2Side.Add(LocationRotation, NewSide);
 	return NewSide;
 }
 
@@ -234,9 +246,9 @@ void AMC_Chunk::RemoveVoxelSide(FSide* Side){
 		return;
 	}
 
-	//TODO create instance of the side that is besides to this side(To be deleted) and delete this side
+	//create instance of the side that is besides to this side(To be deleted) and delete this side
 	if(Side->Next == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Side->Next is null"));
+		//UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxelSide: Side->Next is null"));
 		return;
 	}
 	FSide* NextSide = Side->Next;
@@ -252,22 +264,24 @@ void AMC_Chunk::RemoveVoxelSide(FSide* Side){
 	NextSide->Chunk->RedrawVoxelSide(NextSide);
 }
 
-void AMC_Chunk::RemoveVoxel(FVector Location, UInstancedStaticMeshComponent* StaticMesh){
+void AMC_Chunk::RemoveVoxel(FVector Location, FQuat Rotation, UInstancedStaticMeshComponent* StaticMesh){
 
 	if(StaticMesh == nullptr){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: StaticMesh is null"));
 		return;
 	}
-
-	if(!Vector2Side.Contains(Location)){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: Missing Location: %s"), *Location.ToString());
+	FString LocationRotation = Location.ToString() + "|" + FormatRotator(Rotation.Rotator());
+	if(!Vector2Side.Contains(LocationRotation)){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: Missing Location: %s"), *LocationRotation);
 		return;
 	}
-	FSide* DeleteSide = Vector2Side[Location];
+	FSide* DeleteSide = Vector2Side[LocationRotation];
 	if(DeleteSide == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("RemoveVoxel: DeleteSide is nullptr for %s"), *Location.ToString());
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: DeleteSide is nullptr for %s"), *Location.ToString());
 		return;
 	}
+	UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxel: DeleteSide is %s"), *DeleteSide->Name);
+
 
 	FVoxel* SideParent = DeleteSide->Parent;
 	if(SideParent == nullptr){
@@ -303,18 +317,28 @@ void AMC_Chunk::MapSides(FSide* Side, FHitResult OutHit){
 	FTransform OutInstanceTransform;
 	HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, false);
 	FVector SideCenter = OutInstanceTransform.GetLocation();
+	FQuat SideRotation = OutInstanceTransform.GetRotation();
 
-	if(!HitChunk->Vector2Side.Contains(SideCenter)){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: Vector2Side doens't contain: %s"), *SideCenter.ToString());
+	FString LocationRotation = SideCenter.ToString() + "|" + FormatRotator(SideRotation.Rotator());
+
+	if(!HitChunk->Vector2Side.Contains(LocationRotation)){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: Vector2Side doens't contain: %s"), *LocationRotation);
 		return;
 	}
 	// Map both sides to each other
-	FSide* NextSide = HitChunk->Vector2Side[SideCenter];
-	HitChunk->RemoveVoxelSide(NextSide);
+	FSide* NextSide = HitChunk->Vector2Side[LocationRotation];
 	if(NextSide == nullptr){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: NextSide == nullptr"));
 		return;
 	}
+		HitChunk->RemoveVoxelSide(NextSide);
 	NextSide->Next = Side;
 	Side->Next = NextSide;
+}
+
+FString AMC_Chunk::FormatRotator(FRotator Rotator){
+	float P = Rotator.Pitch;
+	float Y = Rotator.Yaw;
+	float R = Rotator.Roll;
+	return "P=" + FString::SanitizeFloat(round(P)) + " Y=" + FString::SanitizeFloat(round(Y)) +" R=" + FString::SanitizeFloat(round(R));
 }

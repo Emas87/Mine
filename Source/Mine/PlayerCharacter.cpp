@@ -131,8 +131,9 @@ void APlayerCharacter::Remove()
 		FTransform OutInstanceTransform;
 		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, false);
 		FVector SideCenter = OutInstanceTransform.GetLocation();
+		FQuat SideRotation = OutInstanceTransform.GetRotation();
 
-		HitChunk->RemoveVoxel(SideCenter, HitComponent);
+		HitChunk->RemoveVoxel(SideCenter, SideRotation, HitComponent);
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("APlayerCharacter::Remove: It didn't hit anything"));
 	}
@@ -182,13 +183,15 @@ void APlayerCharacter::PutBlock(){
 		FTransform OutInstanceTransform;
 		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, false);
 		FVector SideCenter = OutInstanceTransform.GetLocation();
+		FQuat SideRotation = OutInstanceTransform.GetRotation();
+		FString LocationRotation = SideCenter.ToString() + "|" + HitChunk->FormatRotator(SideRotation.Rotator());
 
-		if(!HitChunk->Vector2Side.Contains(SideCenter)){
-			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Missing Vector: %s"), *SideCenter.ToString());
+		if(!HitChunk->Vector2Side.Contains(LocationRotation)){
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Missing Vector: %s"), *LocationRotation);
 			return;
 		}
 
-		FSide* Side = HitChunk->Vector2Side[SideCenter];
+		FSide* Side = HitChunk->Vector2Side[LocationRotation];
 		if(Side == nullptr){
 			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Side == nullptr"));
 			return;
