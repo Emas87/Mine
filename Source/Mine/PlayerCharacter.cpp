@@ -109,7 +109,7 @@ void APlayerCharacter::Remove()
 	FVector HitDirection;
 	AController* OwnerController = GetOwnerController();
 	if(OwnerController == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("No OwnerController Found"));
+		UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::Remove: No OwnerController Found"));
 		return;
 	}
 
@@ -124,12 +124,17 @@ void APlayerCharacter::Remove()
 		AMC_Chunk* HitChunk = Cast<AMC_Chunk>(OutHit.GetActor());
 		
 		if(!HitComponent || !HitChunk){
-			UE_LOG(LogTemp, Error, TEXT("No ACtor or Component"));
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::Remove: No ACtor or Component"));
 			return;
 		}
-		HitChunk->RemoveVoxel(OutHit.Item, HitComponent);			
+
+		FTransform OutInstanceTransform;
+		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, false);
+		FVector SideCenter = OutInstanceTransform.GetLocation();
+
+		HitChunk->RemoveVoxel(SideCenter, HitComponent);
 	} else {
-		UE_LOG(LogTemp, Warning, TEXT("It didn't hit anything"));
+		UE_LOG(LogTemp, Warning, TEXT("APlayerCharacter::Remove: It didn't hit anything"));
 	}
 }
 
@@ -139,7 +144,7 @@ void APlayerCharacter::PutBlock(){
 	FVector HitDirection;
 	AController* OwnerController = GetOwnerController();
 	if(OwnerController == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("No OwnerController Found"));
+		UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: No OwnerController Found"));
 		return;
 	}
 
@@ -156,7 +161,7 @@ void APlayerCharacter::PutBlock(){
 		AMC_Chunk* HitChunk = Cast<AMC_Chunk>(OutHit.GetActor());
 
 		if(!HitComponent || !HitChunk){
-			UE_LOG(LogTemp, Error, TEXT("No ACtor or Component"));
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: No ACtor or Component"));
 			return;
 		}		
 
@@ -165,7 +170,7 @@ void APlayerCharacter::PutBlock(){
 		UInstancedStaticMeshComponent* NewBlock = HitChunk->ISMs[0];
 
 		if(!NewBlock){
-			UE_LOG(LogTemp, Error, TEXT("No Static Mesh"));
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: No Static Mesh"));
 			return;
 		}	
 
@@ -174,19 +179,28 @@ void APlayerCharacter::PutBlock(){
 		
 		float VoxelSize = HitChunk->VoxelSize;
 
-		FString Item = FString::FromInt(OutHit.Item) + " " + HitComponent->GetName();
+		FTransform OutInstanceTransform;
+		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, false);
+		FVector SideCenter = OutInstanceTransform.GetLocation();
 
-		if(!HitChunk->Instance2Side.Contains(Item)){
-			UE_LOG(LogTemp, Error, TEXT("Missing Instance adn Component Combination: %s"), *Item);
+		if(!HitChunk->Vector2Side.Contains(SideCenter)){
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Missing Vector: %s"), *SideCenter.ToString());
 			return;
 		}
-		FSide* Side = HitChunk->Instance2Side[Item];
+
+		FSide* Side = HitChunk->Vector2Side[SideCenter];
 		if(Side == nullptr){
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Side == nullptr"));
 			return;
 		}
-		FVector VoxelLocation = Side->VoxelCenter;
+		if(Side->Parent == nullptr){
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Side == nullptr"));
+			return;
+		}
+		FVector VoxelLocation = Side->Parent->VoxelCenter;
 	
 		// Hit Location is Global, not local
+		// TODO try OutHit.ImpactPoint
 		FVector HitLocation = OutHit.Location;
 		//FVector WorldLocation = VoxelLocation - HitChunk->GetActorLocation();
 		FVector NewLocation = VoxelLocation;
@@ -207,16 +221,15 @@ void APlayerCharacter::PutBlock(){
 		} else if( -ZDiff >= VoxelSize/2 ){
 			NewLocation.Z = VoxelLocation.Z + VoxelSize;
 		} else {
-			UE_LOG(LogTemp, Error, TEXT("Diff isreally weird"));		
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Diff isreally weird"));		
 			return;
 		}
-		// UE_LOG(LogTemp, Warning, TEXT("NewLocation: %s"), *NewLocation.ToString());
 		Transform.SetLocation(NewLocation);
 
 		// TODO Check if user is in the range
 		HitChunk->AddVoxel(Transform, NewBlock);
 
 	} else {
-		UE_LOG(LogTemp, Warning, TEXT("It didn't hit anything"));
+		UE_LOG(LogTemp, Warning, TEXT("APlayerCharacter::PutBlock: It didn't hit anything"));
 	}
 }

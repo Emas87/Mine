@@ -12,21 +12,19 @@ USTRUCT()
 struct FSide
 {
 	GENERATED_BODY()
+	bool Visible;
 	FString Name;
-	FVector VoxelCenter;
-	FVector SideCenter;
+	FVector SideLocation;
 	FQuat SideRotation;
 	FSide* Next;
 	FVoxel* Parent;
 	UInstancedStaticMeshComponent* StaticMesh;
 	AMC_Chunk* Chunk;
-	TDoubleLinkedListNode<int32>* InstanceIndex;
 
 	FSide(){
-		InstanceIndex = nullptr;
+		Visible = false;
 		Name = "";
-		VoxelCenter = FVector(0);
-		SideCenter = FVector(0);
+		SideLocation = FVector(0);
 		SideRotation = FQuat(FRotator(0,0,0));
 		Next = nullptr;
 		Parent = nullptr;
@@ -35,7 +33,7 @@ struct FSide
 	}
 
 	FString ToString(){
-		FString print =  "Name: " + Name + "; " + "VoxelCenter: " + VoxelCenter.ToString() + "; " + "SideCenter: " + SideCenter.ToString() + "; " 
+		FString print =  "Name: " + Name + "; " + "SideLocation: " + SideLocation.ToString() + "; " 
 		+ "SideRotation: " + SideRotation.ToString() + "; " ;
 		if(Next==nullptr){
 			print = print + "Next: nullptr; ";
@@ -109,22 +107,20 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Code", Meta = (ExposeOnSpawn=true, InstanceEditable=true))
 	float VoxelSize = 100;
 
-	TMap<FString, FSide*> Instance2Side;
+	TMap<FVector, FSide*> Vector2Side;
 
 	TArray<FVoxel*> Voxels;
 
-	TMap<UInstancedStaticMeshComponent,TDoubleLinkedList<int32>> Indexes;
+	void RedrawVoxelSide(FSide* Side);
 
 	FSide* AddVoxelSide(FString Side, FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* StaticMesh, bool AddInstance=true );
 
 	UFUNCTION(BlueprintCallable, Category = "Code")
 	void AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* StaticMesh);
 
-	void RemoveVoxel(int32 index, UInstancedStaticMeshComponent* StaticMesh);
+	void RemoveVoxelSide(FSide* Side);
 
-	void RemoveVoxelSide(FString InstanceComponent, UInstancedStaticMeshComponent* StaticMesh);
-
-	void RedrawVoxelSide(FSide* Side);
-
+	void RemoveVoxel(FVector Location, UInstancedStaticMeshComponent* StaticMesh);
+	
 	void MapSides(FSide* Side, FHitResult OutHit);
 };
