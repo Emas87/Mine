@@ -69,11 +69,11 @@ FSide* AMC_Chunk::AddVoxelSide(FString Side, FVector Location, FRotator Rotation
 		Transform.SetLocation(FVector(Location.X - VoxelSize/2, Location.Y, Location.Z));
 		Transform.SetRotation(FQuat(FRotator(Rotation.Pitch + 90, Rotation.Yaw, Rotation.Roll)));
 	} else if(Side == TEXT("Right")){
-		Transform.SetLocation(FVector(Location.X, Location.Y + VoxelSize/2, Location.Z));
-		Transform.SetRotation(FQuat(FRotator(Rotation.Pitch, Rotation.Yaw, Rotation.Roll + 90)));
-	} else if(Side == TEXT("Left")){
 		Transform.SetLocation(FVector(Location.X, Location.Y - VoxelSize/2, Location.Z));
 		Transform.SetRotation(FQuat(FRotator(Rotation.Pitch, Rotation.Yaw, Rotation.Roll - 90)));
+	} else if(Side == TEXT("Left")){
+		Transform.SetLocation(FVector(Location.X, Location.Y + VoxelSize/2, Location.Z));
+		Transform.SetRotation(FQuat(FRotator(Rotation.Pitch, Rotation.Yaw, Rotation.Roll + 90)));
 	} else {
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Trying a different side %s"), *Side);
 		return NewSide;
@@ -200,6 +200,10 @@ void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* St
 		NewVoxel->Sides[5] = AddVoxelSide(TEXT("Left"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
 		NewVoxel->Sides[5]->Parent = NewVoxel;
 		MapSides(NewVoxel->Sides[5], OutHit);
+		UInstancedStaticMeshComponent* HitComponent = Cast<UInstancedStaticMeshComponent>(OutHit.GetComponent());
+		UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::MapSides: Component name: %s and index %d"), *HitComponent->GetName(), OutHit.Item);
+		// TODO check if it is hitting Right or Viceversa
+
 	}
 	Voxels.Add(NewVoxel);
 }
@@ -295,6 +299,7 @@ void AMC_Chunk::RemoveVoxel(FVector Location, FQuat Rotation, UInstancedStaticMe
 			continue;
 		}
 		RemoveVoxelSide(SideParent->Sides[i]);
+
 	}
 	delete SideParent;
 	if(DeleteSide==nullptr){
