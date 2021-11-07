@@ -79,13 +79,16 @@ FSide* AMC_Chunk::AddVoxelSide(FString Side, FVector Location, FRotator Rotation
 		return NewSide;
 	}
 
+	//UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Chunk Location %s"), *this->GetActorLocation().ToString()) 
+	
 	if(AddInstance){
-		InstanceIndex = StaticMesh->AddInstance(Transform);
+		InstanceIndex = StaticMesh->AddInstanceWorldSpace(Transform);
 		FTransform OutInstanceTransform;
-		StaticMesh->GetInstanceTransform(InstanceIndex, OutInstanceTransform, false);
+		StaticMesh->GetInstanceTransform(InstanceIndex, OutInstanceTransform, true);
 		FVector SideCenter = OutInstanceTransform.GetLocation();
 		FQuat SideRotation = OutInstanceTransform.GetRotation();
 
+		// TODO Delete this, was for debugging purposes
 		if(FormatRotator(SideRotation.Rotator()) != FormatRotator(Transform.GetRotation().Rotator())){
 			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Rotator are different: \n%s\n%s"), 
 			*FormatRotator(SideRotation.Rotator()), *FormatRotator(Transform.GetRotation().Rotator()));
@@ -116,7 +119,11 @@ void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* St
 		return;
 	}
 	// Check if there is any Voxel next tho this new one(alll 6 sides), and only create sides that are vissible(that doen'st have a neighboor)
-	FVector NewLocation = Transform.GetLocation();
+	FVector LocalLocation = Transform.GetLocation();
+	FVector ChunkLocation = this->GetActorLocation();
+	FVector NewLocation = LocalLocation + ChunkLocation;
+
+	//Turn it into World Coordinates
 	FHitResult OutHit;
 	FVoxel* NewVoxel = new FVoxel;
 	NewVoxel->VoxelCenter = NewLocation;
@@ -128,9 +135,7 @@ void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* St
 		NewVoxel->Sides[0] = AddVoxelSide(TEXT("Top"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
 		NewVoxel->Sides[0]->Parent = NewVoxel;
 	} else {	
-		//AddVoxel without Instance the mesh	
-		DrawDebugPoint(GetWorld(), OutHit.Location, 20, FColor::White, true);
-		DrawDebugDirectionalArrow(GetWorld(), NewLocation, FVector(NewLocation.X, NewLocation.Y, NewLocation.Z + VoxelSize), 20, FColor::Red, true);
+		//AddVoxelSide without Instance the mesh	
 		NewVoxel->Sides[0] = AddVoxelSide(TEXT("Top"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
 		NewVoxel->Sides[0]->Parent = NewVoxel;
 		MapSides(NewVoxel->Sides[0], OutHit);
@@ -142,8 +147,6 @@ void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* St
 		NewVoxel->Sides[1] = AddVoxelSide(TEXT("Bottom"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
 		NewVoxel->Sides[1]->Parent = NewVoxel;
 	} else {
-		DrawDebugPoint(GetWorld(), OutHit.Location, 40, FColor::White, true);
-		DrawDebugDirectionalArrow(GetWorld(), NewLocation, FVector(NewLocation.X, NewLocation.Y, NewLocation.Z - VoxelSize), 20, FColor::Red, true);
 		NewVoxel->Sides[1] = AddVoxelSide(TEXT("Bottom"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
 		NewVoxel->Sides[1]->Parent = NewVoxel;
 		MapSides(NewVoxel->Sides[1], OutHit);	
@@ -155,8 +158,6 @@ void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* St
 		NewVoxel->Sides[2] = AddVoxelSide(TEXT("Front"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
 		NewVoxel->Sides[2]->Parent = NewVoxel;
 	} else {
-		DrawDebugPoint(GetWorld(), OutHit.Location, 40, FColor::White, true);
-		DrawDebugDirectionalArrow(GetWorld(), NewLocation, FVector(NewLocation.X + VoxelSize, NewLocation.Y, NewLocation.Z), 20, FColor::Red, true);
 		NewVoxel->Sides[2] = AddVoxelSide(TEXT("Front"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
 		NewVoxel->Sides[2]->Parent = NewVoxel;
 		MapSides(NewVoxel->Sides[2], OutHit);
@@ -168,9 +169,6 @@ void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* St
 		NewVoxel->Sides[3] = AddVoxelSide(TEXT("Back"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
 		NewVoxel->Sides[3]->Parent = NewVoxel;
 	} else {
-
-		DrawDebugPoint(GetWorld(), OutHit.Location, 40, FColor::White, true);
-		DrawDebugDirectionalArrow(GetWorld(), NewLocation, FVector(NewLocation.X - VoxelSize, NewLocation.Y, NewLocation.Z), 20, FColor::Red, true);
 		NewVoxel->Sides[3] = AddVoxelSide(TEXT("Back"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
 		NewVoxel->Sides[3]->Parent = NewVoxel;
 		MapSides(NewVoxel->Sides[3], OutHit);
@@ -182,8 +180,6 @@ void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* St
 		NewVoxel->Sides[4] = AddVoxelSide(TEXT("Right"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
 		NewVoxel->Sides[4]->Parent = NewVoxel;
 	} else {
-		DrawDebugPoint(GetWorld(), OutHit.Location, 40, FColor::White, true);
-		DrawDebugDirectionalArrow(GetWorld(), NewLocation, FVector(NewLocation.X, NewLocation.Y - VoxelSize, NewLocation.Z), 20, FColor::Red, true);
 		NewVoxel->Sides[4] = AddVoxelSide(TEXT("Right"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
 		NewVoxel->Sides[4]->Parent = NewVoxel;
 		MapSides(NewVoxel->Sides[4], OutHit);
@@ -195,13 +191,11 @@ void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* St
 		NewVoxel->Sides[5] = AddVoxelSide(TEXT("Left"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
 		NewVoxel->Sides[5]->Parent = NewVoxel;
 	} else {
-		DrawDebugPoint(GetWorld(), OutHit.Location, 40, FColor::White, true);
-		DrawDebugDirectionalArrow(GetWorld(), NewLocation, FVector(NewLocation.X, NewLocation.Y + VoxelSize, NewLocation.Z), 20, FColor::Red, true);
 		NewVoxel->Sides[5] = AddVoxelSide(TEXT("Left"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
 		NewVoxel->Sides[5]->Parent = NewVoxel;
 		MapSides(NewVoxel->Sides[5], OutHit);
-		UInstancedStaticMeshComponent* HitComponent = Cast<UInstancedStaticMeshComponent>(OutHit.GetComponent());
-		UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::MapSides: Component name: %s and index %d"), *HitComponent->GetName(), OutHit.Item);
+		//UInstancedStaticMeshComponent* HitComponent = Cast<UInstancedStaticMeshComponent>(OutHit.GetComponent());
+		//UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::AddVoxel: Component name: %s and index %d"), *HitComponent->GetName(), OutHit.Item);
 		// TODO check if it is hitting Right or Viceversa
 
 	}
@@ -231,9 +225,26 @@ void AMC_Chunk::RemoveVoxelSide(FSide* Side){
 	FVector start = FVector(end.X + 1, end.Y + 1, end.Z + 1);
 
 
+	//If it doesn't hit it self, side is not visible, lets look for the sidemesh that is invisible and will become visble if any.
 	bool bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, start, end, ECollisionChannel::ECC_Destructible);
 	if(!bsuccess){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Didn't hit, trying to find it self"));
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Didn't hit, trying to find it self, %s"), *Side->Name);
+		//create instance of the side that is besides to this side(To be deleted) and delete this side
+		if(Side->Next == nullptr){
+			UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxelSide: Side->Next is null"));
+			return;
+		}
+		FSide* NextSide = Side->Next;
+		if(NextSide == nullptr){
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: NextSide is null "));
+			return;
+		}
+
+		if(NextSide->Chunk == nullptr){
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: NextSide->Chunk is null"));
+			return;
+		}
+		NextSide->Chunk->RedrawVoxelSide(NextSide);
 		return;
 	}
 
@@ -248,24 +259,7 @@ void AMC_Chunk::RemoveVoxelSide(FSide* Side){
 	if(!Side->StaticMesh->RemoveInstance(OutHit.Item)){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Not Deleting Instance: %d For for %s"), OutHit.Item, *HitComponent->GetName());
 		return;
-	}
-
-	//create instance of the side that is besides to this side(To be deleted) and delete this side
-	if(Side->Next == nullptr){
-		//UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxelSide: Side->Next is null"));
-		return;
-	}
-	FSide* NextSide = Side->Next;
-	if(NextSide == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: NextSide is null "));
-		return;
-	}
-
-	if(NextSide->Chunk == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: NextSide->Chunk is null"));
-		return;
-	}
-	NextSide->Chunk->RedrawVoxelSide(NextSide);
+	}	
 }
 
 void AMC_Chunk::RemoveVoxel(FVector Location, FQuat Rotation, UInstancedStaticMeshComponent* StaticMesh){
@@ -320,7 +314,7 @@ void AMC_Chunk::MapSides(FSide* Side, FHitResult OutHit){
 		return;
 	}
 	FTransform OutInstanceTransform;
-	HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, false);
+	HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, true);
 	FVector SideCenter = OutInstanceTransform.GetLocation();
 	FQuat SideRotation = OutInstanceTransform.GetRotation();
 

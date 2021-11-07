@@ -129,7 +129,7 @@ void APlayerCharacter::Remove()
 		}
 
 		FTransform OutInstanceTransform;
-		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, false);
+		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, true);
 		FVector SideCenter = OutInstanceTransform.GetLocation();
 		FQuat SideRotation = OutInstanceTransform.GetRotation();
 
@@ -181,7 +181,7 @@ void APlayerCharacter::PutBlock(){
 		float VoxelSize = HitChunk->VoxelSize;
 
 		FTransform OutInstanceTransform;
-		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, false);
+		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, true);
 		FVector SideCenter = OutInstanceTransform.GetLocation();
 		FQuat SideRotation = OutInstanceTransform.GetRotation();
 		FString LocationRotation = SideCenter.ToString() + "|" + HitChunk->FormatRotator(SideRotation.Rotator());
