@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
+//TODO try to use planes intead of that cube with low Z value
+// Use another material, these are 4K
 #include "MC_Chunk.h"
 #include "DrawDebugHelpers.h"
 
@@ -21,7 +22,8 @@ AMC_Chunk::~AMC_Chunk()
 // Called when the game starts or when spawned
 void AMC_Chunk::BeginPlay()
 {
-	Super::BeginPlay();	
+	Super::BeginPlay();
+	DrawAllVoxels();
 }
 
 // Called every frame
@@ -30,31 +32,37 @@ void AMC_Chunk::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AMC_Chunk::RedrawVoxelSide(FSide* Side){
-	if(Side == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RedrawVoxelSide: StaticMesh is null"));
+void AMC_Chunk::DrawVoxelSide(FSide& Side){
+	if(Side.StaticMesh == nullptr){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::DrawVoxelSide: Side.StaticMesh not initialized"));
 		return;
 	}
-
-	if(Side->StaticMesh == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RedrawVoxelSide: Side->StaticMesh not initialized"));
-		return;
-	}
-
 	FTransform Transform;
-	Transform.SetLocation(Side->SideLocation);
-	Transform.SetRotation(FQuat(Side->SideRotation));
-	Side->StaticMesh->AddInstance(Transform);
-	Side->Visible = true;
+	Transform.SetLocation(Side.SideLocation);
+	Transform.SetRotation(Side.SideRotation);
+	Side.StaticMesh->AddInstanceWorldSpace(Transform);
+	if(!Side.Visible){
+		Side.Visible = true;
+	}
 }
 
-FSide* AMC_Chunk::AddVoxelSide(FString Side, FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* StaticMesh, bool AddInstance){
-	FSide* NewSide = new FSide;
-	int32 InstanceIndex;
+void AMC_Chunk::DrawAllVoxels(){
+	for(FSide* VoxelSide : VisibleSides){
+		if(VoxelSide->Visible){
+			DrawVoxelSide(*VoxelSide);
+		} else {
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::DrawAllVoxels: There is an InVisible Fside in the VisibleSides list"));
+		}
+	}
+	VisibleSides.Empty();
+}
+
+void AMC_Chunk::AddVoxelSide(FSide &NewSide, FString Side, FVector Location, FQuat Rotation_Quat, UInstancedStaticMeshComponent* StaticMesh){
 	if(StaticMesh == nullptr){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: StaticMesh is null"));
-		return NewSide;
+		return ;
 	}
+	FRotator Rotation = Rotation_Quat.Rotator();
 	FTransform Transform;
 	if(Side == TEXT("Top")){
 		Transform.SetLocation(FVector(Location.X, Location.Y, Location.Z + VoxelSize/2));
@@ -76,190 +84,156 @@ FSide* AMC_Chunk::AddVoxelSide(FString Side, FVector Location, FRotator Rotation
 		Transform.SetRotation(FQuat(FRotator(Rotation.Pitch, Rotation.Yaw, Rotation.Roll + 90)));
 	} else {
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Trying a different side %s"), *Side);
-		return NewSide;
-	}
-
-	//UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Chunk Location %s"), *this->GetActorLocation().ToString()) 
-	
-	if(AddInstance){
-		InstanceIndex = StaticMesh->AddInstanceWorldSpace(Transform);
-		FTransform OutInstanceTransform;
-		StaticMesh->GetInstanceTransform(InstanceIndex, OutInstanceTransform, true);
-		FVector SideCenter = OutInstanceTransform.GetLocation();
-		FQuat SideRotation = OutInstanceTransform.GetRotation();
-
-		// TODO Delete this, was for debugging purposes
-		if(FormatRotator(SideRotation.Rotator()) != FormatRotator(Transform.GetRotation().Rotator())){
-			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Rotator are different: \n%s\n%s"), 
-			*FormatRotator(SideRotation.Rotator()), *FormatRotator(Transform.GetRotation().Rotator()));
-		}
-	}
-
-	FString LocationRotation = Transform.GetLocation().ToString() + "|" + FormatRotator(Transform.GetRotation().Rotator());
-
-	if(Vector2Side.Contains(LocationRotation)){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Vector2Side Already contains: %s"), *LocationRotation);
-		return NewSide;
-	}
-
-	NewSide->Name = Side;
-	NewSide->Visible = true;
-	NewSide->SideLocation = Transform.GetLocation();
-	NewSide->SideRotation = Transform.GetRotation();
-	NewSide->StaticMesh = StaticMesh;
-	NewSide->Chunk = this;
-	Vector2Side.Add(LocationRotation, NewSide);
-	return NewSide;
-}
-
-void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* StaticMesh){
-
-	if(StaticMesh == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxel: StaticMesh is null"));
 		return;
 	}
+
+	NewSide.SideLocation = Transform.GetLocation();
+	NewSide.SideRotation = Transform.GetRotation();
+	NewSide.StaticMesh = StaticMesh;
+	NewSide.Chunk = this;
+
+	NewSide.Visible = true;
+	VisibleSides.Add(&NewSide);
+
+	// Checking if there is already 1 Side in same location, whihc means both sides should be visible
+	if(Vector2Side.Contains(NewSide.SideLocation)){
+		// Map both sides to each other
+		FSide* NextSide = Vector2Side[NewSide.SideLocation];
+		if(NextSide == nullptr){
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: NextSide == nullptr"));
+			return;
+		}
+		if(NextSide->Next != nullptr){
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelSide: Vector2Side Already contains: %s with 2 side in that Location"), *Transform.GetLocation().ToString());
+			return;
+		}
+		RemoveVoxelSide(*NextSide);
+
+		NextSide->Next = &NewSide;
+		NewSide.Next = NextSide;
+
+		NextSide->Visible = false;
+		NewSide.Visible = false;
+
+		VisibleSides.Remove(NextSide);
+		VisibleSides.Remove(&NewSide);
+		return;
+	}
+	
+	Vector2Side.Add(NewSide.SideLocation, &NewSide);
+	// TODO check if there is a hit, this would mean this is the limit of the chunk and there is another block we can map them
+	// Find index, we are going to trace a small line crossing through the center of the mesh
+	FHitResult OutHit;
+	FVector end = NewSide.SideLocation;
+	FVector start = FVector(end.X + 1, end.Y + 1, end.Z + 1);
+
+	bool bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, start, end, ECollisionChannel::ECC_Destructible);
+	if(bsuccess){		
+		MapSides(NewSide, OutHit);
+		VisibleSides.Remove(&NewSide);
+	}
+}
+
+void AMC_Chunk::AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* StaticMesh, bool local){
+	//Instead of adding one by one and then deleting it, lets calculate all positions of the voxels and then draw only the sides that are seen
+	if(StaticMesh == nullptr){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxelInit: StaticMesh is null"));
+		return;
+	}
+
 	// Check if there is any Voxel next tho this new one(alll 6 sides), and only create sides that are vissible(that doen'st have a neighboor)
 	FVector LocalLocation = Transform.GetLocation();
 	FVector ChunkLocation = this->GetActorLocation();
-	FVector NewLocation = LocalLocation + ChunkLocation;
-
-	//Turn it into World Coordinates
-	FHitResult OutHit;
+	
+	//Turn it into World Coordinates unless Transform is local
+	FVector NewLocation = LocalLocation;
+	if(local){
+		NewLocation = NewLocation + ChunkLocation;
+	}
 	FVoxel* NewVoxel = new FVoxel;
 	NewVoxel->VoxelCenter = NewLocation;
 
 	// Top
-	bool bsuccess = false;
-	bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, NewLocation, FVector(NewLocation.X, NewLocation.Y, NewLocation.Z + VoxelSize), ECollisionChannel::ECC_Destructible);
-	if(!bsuccess || !Cast<AMC_Chunk>(OutHit.GetActor())){
-		NewVoxel->Sides[0] = AddVoxelSide(TEXT("Top"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
-		NewVoxel->Sides[0]->Parent = NewVoxel;
-	} else {	
-		//AddVoxelSide without Instance the mesh	
-		NewVoxel->Sides[0] = AddVoxelSide(TEXT("Top"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
-		NewVoxel->Sides[0]->Parent = NewVoxel;
-		MapSides(NewVoxel->Sides[0], OutHit);
-	}
-	
+	AddVoxelSide(NewVoxel->Sides[0], TEXT("Top"), NewLocation, Transform.GetRotation(), StaticMesh);
 	//Bottom
-	bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, NewLocation, FVector(NewLocation.X, NewLocation.Y, NewLocation.Z - VoxelSize), ECollisionChannel::ECC_Destructible);
-	if(!bsuccess || !Cast<AMC_Chunk>(OutHit.GetActor())){
-		NewVoxel->Sides[1] = AddVoxelSide(TEXT("Bottom"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
-		NewVoxel->Sides[1]->Parent = NewVoxel;
-	} else {
-		NewVoxel->Sides[1] = AddVoxelSide(TEXT("Bottom"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
-		NewVoxel->Sides[1]->Parent = NewVoxel;
-		MapSides(NewVoxel->Sides[1], OutHit);	
-	}
-	
+	AddVoxelSide(NewVoxel->Sides[1], TEXT("Bottom"), NewLocation, Transform.GetRotation(), StaticMesh);	
 	//Front
-	bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, NewLocation, FVector(NewLocation.X + VoxelSize, NewLocation.Y, NewLocation.Z), ECollisionChannel::ECC_Destructible);
-	if(!bsuccess || !Cast<AMC_Chunk>(OutHit.GetActor())){
-		NewVoxel->Sides[2] = AddVoxelSide(TEXT("Front"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
-		NewVoxel->Sides[2]->Parent = NewVoxel;
-	} else {
-		NewVoxel->Sides[2] = AddVoxelSide(TEXT("Front"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
-		NewVoxel->Sides[2]->Parent = NewVoxel;
-		MapSides(NewVoxel->Sides[2], OutHit);
-	}
-
+	AddVoxelSide(NewVoxel->Sides[2], TEXT("Front"), NewLocation, Transform.GetRotation(), StaticMesh);
 	//Back
-	bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, NewLocation, FVector(NewLocation.X - VoxelSize, NewLocation.Y, NewLocation.Z), ECollisionChannel::ECC_Destructible);
-	if(!bsuccess || !Cast<AMC_Chunk>(OutHit.GetActor())){
-		NewVoxel->Sides[3] = AddVoxelSide(TEXT("Back"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
-		NewVoxel->Sides[3]->Parent = NewVoxel;
-	} else {
-		NewVoxel->Sides[3] = AddVoxelSide(TEXT("Back"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
-		NewVoxel->Sides[3]->Parent = NewVoxel;
-		MapSides(NewVoxel->Sides[3], OutHit);
-	}
-
+	AddVoxelSide(NewVoxel->Sides[3], TEXT("Back"), NewLocation, Transform.GetRotation(), StaticMesh);
 	//Right
-	bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, NewLocation, FVector(NewLocation.X, NewLocation.Y - VoxelSize, NewLocation.Z), ECollisionChannel::ECC_Destructible);
-	if(!bsuccess || !Cast<AMC_Chunk>(OutHit.GetActor())){
-		NewVoxel->Sides[4] = AddVoxelSide(TEXT("Right"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
-		NewVoxel->Sides[4]->Parent = NewVoxel;
-	} else {
-		NewVoxel->Sides[4] = AddVoxelSide(TEXT("Right"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
-		NewVoxel->Sides[4]->Parent = NewVoxel;
-		MapSides(NewVoxel->Sides[4], OutHit);
-	}
-
+	AddVoxelSide(NewVoxel->Sides[4], TEXT("Right"), NewLocation, Transform.GetRotation(), StaticMesh);
 	//Left
-	bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, NewLocation, FVector(NewLocation.X, NewLocation.Y + VoxelSize, NewLocation.Z), ECollisionChannel::ECC_Destructible);
-	if(!bsuccess || !Cast<AMC_Chunk>(OutHit.GetActor())){
-		NewVoxel->Sides[5] = AddVoxelSide(TEXT("Left"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh);
-		NewVoxel->Sides[5]->Parent = NewVoxel;
-	} else {
-		NewVoxel->Sides[5] = AddVoxelSide(TEXT("Left"), NewLocation, Transform.GetRotation().Rotator(), StaticMesh, false);
-		NewVoxel->Sides[5]->Parent = NewVoxel;
-		MapSides(NewVoxel->Sides[5], OutHit);
-		//UInstancedStaticMeshComponent* HitComponent = Cast<UInstancedStaticMeshComponent>(OutHit.GetComponent());
-		//UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::AddVoxel: Component name: %s and index %d"), *HitComponent->GetName(), OutHit.Item);
-		// TODO check if it is hitting Right or Viceversa
+	AddVoxelSide(NewVoxel->Sides[5], TEXT("Left"), NewLocation, Transform.GetRotation(), StaticMesh);
 
-	}
 	Voxels.Add(NewVoxel);
 }
 
-void AMC_Chunk::RemoveVoxelSide(FSide* Side){
+void AMC_Chunk::RemoveVoxelSide(FSide& Side, FHitResult *InHit){
 
-	if(Side == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Side is null"));
-		return;
-	}
-
-	if(!Side->Visible){
-		UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxelSide: Side no visible"));
-		return;
-	}
-
-	if(Side->StaticMesh == nullptr){
+	if(Side.StaticMesh == nullptr){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: StaticMesh is null"));
 		return;
 	}
 
-	//Find index, we are going to trace a small line crossing through the center of the mesh
-	FHitResult OutHit;
-	FVector end = Side->SideLocation;
-	FVector start = FVector(end.X + 1, end.Y + 1, end.Z + 1);
+	//Removing from Vector2Side
+	Vector2Side.Remove(Side.SideLocation);
 
-
-	//If it doesn't hit it self, side is not visible, lets look for the sidemesh that is invisible and will become visble if any.
-	bool bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, start, end, ECollisionChannel::ECC_Destructible);
-	if(!bsuccess){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Didn't hit, trying to find it self, %s"), *Side->Name);
+	//Lets check if curretn side is inVisible and the other side in same location will become visible.
+	if(!Side.Visible){
+		UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxelSide: Removing invisible side"));
 		//create instance of the side that is besides to this side(To be deleted) and delete this side
-		if(Side->Next == nullptr){
-			UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxelSide: Side->Next is null"));
+		if(Side.Next == nullptr){
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Side.Next is null and shouldn't since this side is invicible there have to be a Next"));
 			return;
 		}
-		FSide* NextSide = Side->Next;
-		if(NextSide == nullptr){
-			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: NextSide is null "));
-			return;
-		}
+		FSide* NextSide = Side.Next;
 
 		if(NextSide->Chunk == nullptr){
-			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: NextSide->Chunk is null"));
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: NextSide.Chunk is null"));
 			return;
 		}
-		NextSide->Chunk->RedrawVoxelSide(NextSide);
+		NextSide->Chunk->DrawVoxelSide(*NextSide);
+		Vector2Side.Add(Side.SideLocation, NextSide);
+		return;
+	}
+
+	Side.Visible = false;
+	VisibleSides.Remove(&Side);
+
+	if(InHit != nullptr){
+		if(!Side.StaticMesh->RemoveInstance(InHit->Item)){
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Not Deleting Instance: %d"), InHit->Item);
+		}
+		return;
+	}
+	//Find index, we are going to trace a small line crossing through the center of the mesh
+	FHitResult OutHit;
+	FVector end = Side.SideLocation;
+	FVector start = FVector(end.X + 1, end.Y + 1, end.Z + 1);
+
+	bool bsuccess = GetWorld()->LineTraceSingleByChannel(OutHit, start, end, ECollisionChannel::ECC_Destructible);
+	if(!bsuccess){
+		// Visible Side has not be drawn yet
 		return;
 	}
 
 	UInstancedStaticMeshComponent* HitComponent = Cast<UInstancedStaticMeshComponent>(OutHit.GetComponent());
 	AMC_Chunk* HitChunk = Cast<AMC_Chunk>(OutHit.GetActor());
 	
-	if(!HitComponent || !HitChunk){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: No ACtor or Component"));
+	if(!HitComponent){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: No Component: %s"), *OutHit.ToString());
+		return;
+	} 
+	if (!HitChunk){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: No Actor"));
 		return;
 	}
 
-	if(!Side->StaticMesh->RemoveInstance(OutHit.Item)){
+	if(!Side.StaticMesh->RemoveInstance(OutHit.Item)){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxelSide: Not Deleting Instance: %d For for %s"), OutHit.Item, *HitComponent->GetName());
 		return;
-	}	
+	}
 }
 
 void AMC_Chunk::RemoveVoxel(FVector Location, FQuat Rotation, UInstancedStaticMeshComponent* StaticMesh){
@@ -268,18 +242,24 @@ void AMC_Chunk::RemoveVoxel(FVector Location, FQuat Rotation, UInstancedStaticMe
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: StaticMesh is null"));
 		return;
 	}
-	FString LocationRotation = Location.ToString() + "|" + FormatRotator(Rotation.Rotator());
-	if(!Vector2Side.Contains(LocationRotation)){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: Missing Location: %s"), *LocationRotation);
+
+	if(!Vector2Side.Contains(Location)){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: Missing Location: %s"), *Location.ToString());
 		return;
 	}
-	FSide* DeleteSide = Vector2Side[LocationRotation];
+	// Use Rotation to find out which of both side in same location is the one to be removed
+	FSide* DeleteSide = Vector2Side[Location];
 	if(DeleteSide == nullptr){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: DeleteSide is nullptr for %s"), *Location.ToString());
 		return;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxel: DeleteSide is %s"), *DeleteSide->Name);
 
+	if(DeleteSide->Next != nullptr){
+		if(FormatRotator(DeleteSide->SideRotation.Rotator()) != FormatRotator(Rotation.Rotator())){
+			DeleteSide = DeleteSide->Next;
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: %s VS %s"), *FormatRotator(DeleteSide->SideRotation.Rotator()), *FormatRotator(Rotation.Rotator())); 
+		}
+	}
 
 	FVoxel* SideParent = DeleteSide->Parent;
 	if(SideParent == nullptr){
@@ -288,51 +268,51 @@ void AMC_Chunk::RemoveVoxel(FVector Location, FQuat Rotation, UInstancedStaticMe
 	}
 
 	for(int i = 5; i >= 0; i--){
-		if(SideParent->Sides[i] == nullptr){
-			UE_LOG(LogTemp, Warning, TEXT("AMC_Chunk::RemoveVoxel: Side[%d] nullptr "), i);
-			continue;
-		}
 		RemoveVoxelSide(SideParent->Sides[i]);
-
 	}
 	delete SideParent;
-	if(DeleteSide==nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: Si se esta borrando el pointer"));
-	}
 }
 
-void AMC_Chunk::MapSides(FSide* Side, FHitResult OutHit){
-	if(Side == nullptr){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: Side == nullptr"));
-		return;
-	}
-	// REmove next side from rendering
+void AMC_Chunk::MapSides(FSide& Side, FHitResult OutHit){
+	// Remove next side from rendering
 	UInstancedStaticMeshComponent* HitComponent = Cast<UInstancedStaticMeshComponent>(OutHit.GetComponent());
 	AMC_Chunk* HitChunk = Cast<AMC_Chunk>(OutHit.GetActor());
-	if(!HitComponent || !HitChunk){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: No Actor or Component"));
+	if(!HitComponent){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: No Component: %s"), *OutHit.ToString());
 		return;
 	}
+
+	if (!HitChunk){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: No Actor"));
+		return;
+	}
+
 	FTransform OutInstanceTransform;
 	HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, true);
-	FVector SideCenter = OutInstanceTransform.GetLocation();
+	FVector Location = OutInstanceTransform.GetLocation();
 	FQuat SideRotation = OutInstanceTransform.GetRotation();
 
-	FString LocationRotation = SideCenter.ToString() + "|" + FormatRotator(SideRotation.Rotator());
-
-	if(!HitChunk->Vector2Side.Contains(LocationRotation)){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: Vector2Side doens't contain: %s"), *LocationRotation);
+	if(!HitChunk->Vector2Side.Contains(Location)){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: Vector2Side doens't contain: %s in chunk %s"), *Location.ToString(), *HitChunk->GetName());
 		return;
 	}
-	// Map both sides to each other
-	FSide* NextSide = HitChunk->Vector2Side[LocationRotation];
+	
+	FSide* NextSide = HitChunk->Vector2Side[Location];
 	if(NextSide == nullptr){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: NextSide == nullptr"));
 		return;
 	}
-		HitChunk->RemoveVoxelSide(NextSide);
-	NextSide->Next = Side;
-	Side->Next = NextSide;
+	// Use Rotation to find which of both sides in same location is the one to be removed
+	if(NextSide->Next != nullptr){
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::MapSides: NextSide has a Next Side and it shouldn't"));
+	}
+	
+	HitChunk->RemoveVoxelSide(*NextSide, &OutHit);
+	Side.Visible = false;
+
+	// Map both sides to each other
+	NextSide->Next = &Side;
+	Side.Next = NextSide;
 }
 
 FString AMC_Chunk::FormatRotator(FRotator Rotator){

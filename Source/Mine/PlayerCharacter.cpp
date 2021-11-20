@@ -175,35 +175,39 @@ void APlayerCharacter::PutBlock(){
 			return;
 		}	
 
-		// Get location and Snap location of new voxel
-		FTransform Transform;
-		
-		float VoxelSize = HitChunk->VoxelSize;
-
 		FTransform OutInstanceTransform;
 		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, true);
+		
 		FVector SideCenter = OutInstanceTransform.GetLocation();
 		FQuat SideRotation = OutInstanceTransform.GetRotation();
-		FString LocationRotation = SideCenter.ToString() + "|" + HitChunk->FormatRotator(SideRotation.Rotator());
 
-		if(!HitChunk->Vector2Side.Contains(LocationRotation)){
-			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Missing Vector: %s"), *LocationRotation);
+		if(!HitChunk->Vector2Side.Contains(SideCenter)){
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Missing Vector: %s"), *SideCenter.ToString());
 			return;
 		}
 
-		FSide* Side = HitChunk->Vector2Side[LocationRotation];
+		FSide* Side = HitChunk->Vector2Side[SideCenter];
 		if(Side == nullptr){
 			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Side == nullptr"));
 			return;
 		}
+	
+		// Use Rotation to find which of both sides in same location is the one to be removed}
+		if(Side->Next != nullptr){
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock:Side Shouldn't have Next Side since is Visible."));
+		}
+
 		if(Side->Parent == nullptr){
 			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Side == nullptr"));
 			return;
 		}
 		FVector VoxelLocation = Side->Parent->VoxelCenter;
+
+		// Get location and Snap location of new voxel
+		FTransform Transform;
+		float VoxelSize = HitChunk->VoxelSize;
 	
 		// Hit Location is Global, not local
-		// TODO try OutHit.ImpactPoint
 		FVector HitLocation = OutHit.Location;
 		//FVector WorldLocation = VoxelLocation - HitChunk->GetActorLocation();
 		FVector NewLocation = VoxelLocation;
@@ -227,10 +231,14 @@ void APlayerCharacter::PutBlock(){
 			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Diff isreally weird"));		
 			return;
 		}
+
 		Transform.SetLocation(NewLocation);
 
 		// TODO Check if user is in the range
-		HitChunk->AddVoxel(Transform, NewBlock);
+		HitChunk->AddVoxel(Transform, NewBlock, false);
+
+		//Draw voxel
+		HitChunk->DrawAllVoxels();
 
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("APlayerCharacter::PutBlock: It didn't hit anything"));

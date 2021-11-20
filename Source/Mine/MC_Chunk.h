@@ -8,7 +8,7 @@
 #include "MC_Chunk.generated.h"
 
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FSide
 {
 	GENERATED_BODY()
@@ -51,38 +51,51 @@ struct FSide
 	}
 
 	~FSide(){
-		//
-		/*if(Next != nullptr){
-			//TODO fix when FSide is destroyed
-			FSide TempSide = *Next;
-			TempSide.Next = nullptr;
-		}*/
+		if(Next != nullptr){			
+			// remove reference to this Side
+			Next->Next = nullptr;			
+		}
+		
 	}
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FVoxel
 {
 	GENERATED_BODY()
 	FVector VoxelCenter;
-	TArray<FSide*> Sides;
+	UPROPERTY(BlueprintReadWrite, Category = "Code")
+	TArray<FSide> Sides;
 
 	FVoxel(){
 		VoxelCenter = FVector(0,0,0);
-		Sides.Init(nullptr, 6);
-		Sides[0] = nullptr;
-		Sides[1] = nullptr;
-		Sides[2] = nullptr;
-		Sides[3] = nullptr;
-		Sides[4] = nullptr;
-		Sides[5] = nullptr;		
+		Sides.Add(FSide());
+		Sides.Add(FSide());
+		Sides.Add(FSide());
+		Sides.Add(FSide());
+		Sides.Add(FSide());
+		Sides.Add(FSide());
+
+		Sides[0].Name = "Top";
+		Sides[0].Parent = this;
+		Sides[1].Name = "Bottom";
+		Sides[1].Parent = this;
+		Sides[2].Name = "Front";
+		Sides[2].Parent = this;
+		Sides[3].Name = "Back";
+		Sides[3].Parent = this;
+		Sides[4].Name = "Right";
+		Sides[4].Parent = this;
+		Sides[5].Name = "Left";
+		Sides[5].Parent = this;
 	}
+	//DELETE pointer and free memory
 
 	~FVoxel(){
 		UE_LOG(LogTemp, Warning, TEXT("Deleting Sides"));
-		for(int i = 0; i < 6; i++){
+		/*for(int i = 0; i < 6; i++){
 			delete Sides[i];
-		}
+		}*/
 		Sides.Empty();
 	}
 
@@ -113,22 +126,27 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Code", Meta = (ExposeOnSpawn=true, InstanceEditable=true))
 	float VoxelSize = 100;
 
-	TMap<FString, FSide*> Vector2Side;
+	TMap<FVector, FSide*> Vector2Side;
 
 	TArray<FVoxel*> Voxels;
 
-	void RedrawVoxelSide(FSide* Side);
+	TArray<FSide*> VisibleSides;
 
-	FSide* AddVoxelSide(FString Side, FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* StaticMesh, bool AddInstance=true );
+	void DrawVoxelSide(FSide& Side);
 
 	UFUNCTION(BlueprintCallable, Category = "Code")
-	void AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* StaticMesh);
+	void DrawAllVoxels();
 
-	void RemoveVoxelSide(FSide* Side);
+	void AddVoxelSide(FSide &NewSide, FString Side, FVector Location, FQuat Rotation, UInstancedStaticMeshComponent* StaticMesh);
+
+	UFUNCTION(BlueprintCallable, Category = "Code")
+	void AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* StaticMesh, bool local=true);
+
+	void RemoveVoxelSide(FSide& Side, FHitResult *InHit = nullptr);
 
 	void RemoveVoxel(FVector Location, FQuat Rotation, UInstancedStaticMeshComponent* StaticMesh);
 	
-	void MapSides(FSide* Side, FHitResult OutHit);
+	void MapSides(FSide& Side, FHitResult OutHit);
 
 	FString FormatRotator(FRotator Rotator);
 };
