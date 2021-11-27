@@ -3,7 +3,7 @@
 // Use another material, these are 4K
 #include "MC_Chunk.h"
 #include "DrawDebugHelpers.h"
-
+// TODO change textures 4k are not working out
 AMC_Chunk::AMC_Chunk()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
