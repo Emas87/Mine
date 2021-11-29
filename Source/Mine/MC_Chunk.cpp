@@ -23,7 +23,7 @@ AMC_Chunk::~AMC_Chunk()
 void AMC_Chunk::BeginPlay()
 {
 	Super::BeginPlay();
-	DrawAllVoxels();
+	//DrawAllVoxels();
 }
 
 // Called every frame
