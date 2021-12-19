@@ -1,18 +1,8 @@
 Binaries
-Config
-Content/Collections
-Content/Developers
-Content/Maps
-Content/StaticMesh
 DerivedDataCache
-ForestLandscape.png
-GrassLandscape.png
 Intermediate
 Mine - Shortcut.lnk
 Mine.code-workspace
 Mine.uproject
 Plugins
 Saved
-Script
-.vscode/compileCommands_Mine/*
-.vscode/compileCommands_Default/*

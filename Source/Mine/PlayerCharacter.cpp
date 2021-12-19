@@ -32,8 +32,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &APlayerCharacter::MoveForward);
-	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &APlayerCharacter::LookUp);
 	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &APlayerCharacter::MoveRight);
+	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &APlayerCharacter::LookUp);
 	PlayerInputComponent->BindAxis(TEXT("LookRight"), this, &APlayerCharacter::LookRight);
 	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed ,this, &APlayerCharacter::Jump);	
 	PlayerInputComponent->BindAction(TEXT("Tool"), EInputEvent::IE_Pressed ,this, &APlayerCharacter::Tool);
@@ -43,7 +43,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 void APlayerCharacter::MoveForward(float AxisValue) 
 {
-	AddMovementInput(GetActorForwardVector() * AxisValue);
+	AddMovementInput(GetActorForwardVector() * AxisValue * PlayerSpeed);
 }
 
 void APlayerCharacter::LookUp(float PitchValue)
@@ -53,12 +53,12 @@ void APlayerCharacter::LookUp(float PitchValue)
 
 void APlayerCharacter::MoveRight(float AxisValue)
 {
-	AddMovementInput(GetActorRightVector() * AxisValue);
+	AddMovementInput(GetActorRightVector() * AxisValue * PlayerSpeed);
 }
 
 void APlayerCharacter::LookRight(float YawValue) 
 {
-	AddControllerYawInput( YawValue);
+	AddControllerYawInput(YawValue);
 }
 
 void APlayerCharacter::Jump() 
@@ -129,11 +129,8 @@ void APlayerCharacter::Remove()
 		}
 
 		FTransform OutInstanceTransform;
-		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, true);
-		FVector SideCenter = OutInstanceTransform.GetLocation();
-		FQuat SideRotation = OutInstanceTransform.GetRotation();
 
-		HitChunk->RemoveVoxel(SideCenter, SideRotation, HitComponent);
+		HitChunk->RemoveVoxel(HitComponent, OutHit);
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("APlayerCharacter::Remove: It didn't hit anything"));
 	}
@@ -178,30 +175,7 @@ void APlayerCharacter::PutBlock(){
 		FTransform OutInstanceTransform;
 		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, true);
 		
-		FVector SideCenter = OutInstanceTransform.GetLocation();
-		FQuat SideRotation = OutInstanceTransform.GetRotation();
-
-		if(!HitChunk->Vector2Side.Contains(SideCenter)){
-			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Missing Vector: %s"), *SideCenter.ToString());
-			return;
-		}
-
-		FSide* Side = HitChunk->Vector2Side[SideCenter];
-		if(Side == nullptr){
-			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Side == nullptr"));
-			return;
-		}
-	
-		// Use Rotation to find which of both sides in same location is the one to be removed}
-		if(Side->Next != nullptr){
-			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock:Side Shouldn't have Next Side since is Visible."));
-		}
-
-		if(Side->Parent == nullptr){
-			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Side == nullptr"));
-			return;
-		}
-		FVector VoxelLocation = Side->Parent->VoxelCenter;
+		FVector NewLocation = OutInstanceTransform.GetLocation();
 
 		// Get location and Snap location of new voxel
 		FTransform Transform;
@@ -209,8 +183,8 @@ void APlayerCharacter::PutBlock(){
 	
 		// Hit Location is Global, not local
 		FVector HitLocation = OutHit.Location;
-		//FVector WorldLocation = VoxelLocation - HitChunk->GetActorLocation();
-		FVector NewLocation = VoxelLocation;
+		
+		FVector VoxelLocation = NewLocation;
 
 		float XDiff = VoxelLocation.X - HitLocation.X;
 		float YDiff = VoxelLocation.Y - HitLocation.Y;
@@ -236,9 +210,6 @@ void APlayerCharacter::PutBlock(){
 
 		// TODO Check if user is in the range
 		HitChunk->AddVoxel(Transform, NewBlock, false);
-
-		//Draw voxel
-		HitChunk->DrawAllVoxels();
 
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("APlayerCharacter::PutBlock: It didn't hit anything"));
