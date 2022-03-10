@@ -37,6 +37,8 @@ public:
 	void Tool();
 	void Remove();
 	void PutBlock();
+	bool DoVectorsCollide(FVector Vector1, FVector Vector2, float Size);
+
 
 	UPROPERTY(BlueprintReadWrite, Category = "Code")
 	int MaxRange = 300;

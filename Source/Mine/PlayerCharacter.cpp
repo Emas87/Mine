@@ -3,6 +3,7 @@
 
 #include "PlayerCharacter.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "MC_Chunk.h"
 
 // Sets default values
@@ -128,7 +129,7 @@ void APlayerCharacter::Remove()
 			return;
 		}
 
-		FTransform OutInstanceTransform;
+		// FTransform OutInstanceTransform;
 
 		HitChunk->RemoveVoxel(HitComponent, OutHit);
 	} else {
@@ -161,16 +162,7 @@ void APlayerCharacter::PutBlock(){
 		if(!HitComponent || !HitChunk){
 			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: No ACtor or Component"));
 			return;
-		}		
-
-		// Material 0
-		// TODO: Block Depends on the block selected in the tool bar
-		UInstancedStaticMeshComponent* NewBlock = HitChunk->ISMs[0];
-
-		if(!NewBlock){
-			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: No Static Mesh"));
-			return;
-		}	
+		}
 
 		FTransform OutInstanceTransform;
 		HitComponent->GetInstanceTransform(OutHit.Item, OutInstanceTransform, true);
@@ -182,36 +174,65 @@ void APlayerCharacter::PutBlock(){
 		float VoxelSize = HitChunk->VoxelSize;
 	
 		// Hit Location is Global, not local
-		FVector HitLocation = OutHit.Location;
-		
+		FVector HitLocation = OutHit.Location;		
 		FVector VoxelLocation = NewLocation;
 
+		// Find greatest difference in axes
 		float XDiff = VoxelLocation.X - HitLocation.X;
 		float YDiff = VoxelLocation.Y - HitLocation.Y;
 		float ZDiff = VoxelLocation.Z - HitLocation.Z;
-		if( XDiff >= VoxelSize/2 ){
-			NewLocation.X = VoxelLocation.X - VoxelSize;
-		} else if( -XDiff >= VoxelSize/2 ){
-			NewLocation.X = VoxelLocation.X + VoxelSize;
-		} else if( YDiff >= VoxelSize/2 ){
-			NewLocation.Y = VoxelLocation.Y - VoxelSize;
-		} else if( -YDiff >= VoxelSize/2 ){
-			NewLocation.Y = VoxelLocation.Y + VoxelSize;
-		} else if( ZDiff >= VoxelSize/2 ){
-			NewLocation.Z = VoxelLocation.Z - VoxelSize;
-		} else if( -ZDiff >= VoxelSize/2 ){
-			NewLocation.Z = VoxelLocation.Z + VoxelSize;
-		} else {
-			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: Diff isreally weird"));		
-			return;
+		if(UKismetMathLibrary::Vector_GetAbsMax(FVector(XDiff, YDiff, ZDiff)) == UKismetMathLibrary::Abs(XDiff)){
+			// XDiff is the greatest
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: XDiff is the greatest"));	
+			if(XDiff > 0){
+				NewLocation.X = VoxelLocation.X - VoxelSize;
+			} else {
+				NewLocation.X = VoxelLocation.X + VoxelSize;
+			}
+		} else if(UKismetMathLibrary::Vector_GetAbsMax(FVector(XDiff, YDiff, ZDiff)) == UKismetMathLibrary::Abs(YDiff)){
+			// YDiff is the greatest
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: YDiff is the greatest"));	
+			if(YDiff > 0){
+				NewLocation.Y = VoxelLocation.Y - VoxelSize;
+			} else {
+				NewLocation.Y = VoxelLocation.Y + VoxelSize;
+			}
+		} else if(UKismetMathLibrary::Vector_GetAbsMax(FVector(XDiff, YDiff, ZDiff)) == UKismetMathLibrary::Abs(ZDiff)){
+			// ZDiff is the greatest
+			UE_LOG(LogTemp, Error, TEXT("APlayerCharacter::PutBlock: ZDiff is the greatest"));	
+			if(ZDiff > 0){
+				NewLocation.Z = VoxelLocation.Z - VoxelSize;
+			} else {
+				NewLocation.Z = VoxelLocation.Z + VoxelSize;
+			}	
 		}
 
-		Transform.SetLocation(NewLocation);
-
-		// TODO Check if user is in the range
-		HitChunk->AddVoxel(Transform, NewBlock, false);
+		// if Newlocation doesn't collides with player place new block otherwise ignore block
+		if(!DoVectorsCollide(NewLocation, GetActorLocation(), VoxelSize)){
+			Transform.SetLocation(NewLocation);
+			HitChunk->AddVoxel(Transform, false, 0);
+		}
 
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("APlayerCharacter::PutBlock: It didn't hit anything"));
 	}
+}
+
+bool APlayerCharacter::DoVectorsCollide(FVector Vector1, FVector Vector2, float Size){
+	//If vector2 X is out X margin from Vector1
+	if(Vector1.X + Size < Vector2.X || Vector1.X - Size > Vector2.X){
+		return false;
+	}
+
+	//If vector2 Y is in Y margin from Vector1
+	if(Vector1.Y + Size < Vector2.Y || Vector1.Y - Size > Vector2.Y){
+		return false;
+	}
+
+	//If vector2 Z is in Z margin from Vector1
+	if(Vector1.Z + Size < Vector2.Z || Vector1.Z - Size > Vector2.Z){
+		return false;
+	}
+
+	return true;
 }

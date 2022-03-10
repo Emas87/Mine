@@ -29,12 +29,25 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Code")
 	TArray<UInstancedStaticMeshComponent*> ISMs;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Code")
+	TMap<FVector,int> Voxels;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Code")
+	TMap<FVector,int> NewVoxels;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Code")
+	TSet<FVector> VisibleVoxels;
+
 	UPROPERTY(BlueprintReadWrite, Category = "Code", Meta = (ExposeOnSpawn=true, InstanceEditable=true))
-	float VoxelSize = 50;
+	float VoxelSize = 32;
 
 	UFUNCTION(BlueprintCallable, Category = "Code")
-	void AddVoxel(FTransform Transform, UInstancedStaticMeshComponent* StaticMesh, bool local=true);
+	void AddVoxel(FTransform Transform, bool local=true, int InstanceIndex=0);
 
 	void RemoveVoxel(UInstancedStaticMeshComponent* StaticMesh, FHitResult OutHit);
-	
+
+	UFUNCTION(BlueprintCallable, Category = "Code")
+	TArray<FVector> FindNeighboor(FVector VoxelLocation);
+
+	void HideVoxelByLocation(FVector Location);
 };
