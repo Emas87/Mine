@@ -42,18 +42,18 @@ void AMC_Chunk::AddVoxel(FTransform Transform, bool local, int InstanceIndex){
 	UInstancedStaticMeshComponent* StaticMesh = ISMs[InstanceIndex];
 
 	if(!StaticMesh){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::PutBlock: No Static Mesh"));
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxel: No Static Mesh"));
 		return;
 	}
 	
 	StaticMesh->AddInstanceWorldSpace(Transform);
 	if(Voxels.Contains(NewLocation)){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::PutBlock: Vector %s ,  in Voxels map"), *NewLocation.ToString());
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxel: Vector %s ,  in Voxels map"), *NewLocation.ToString());
 		return;
 	}
 	Voxels.Add(NewLocation, InstanceIndex);
 	if(VisibleVoxels.Contains(NewLocation)){
-		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::PutBlock: Vector %s ,  in VisibleVoxels map"), *NewLocation.ToString());
+		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::AddVoxel: Vector %s ,  in VisibleVoxels map"), *NewLocation.ToString());
 		return;
 	}
 	VisibleVoxels.Add(NewLocation);
@@ -164,7 +164,7 @@ void AMC_Chunk::HideVoxelByLocation(FVector Location){
 
 		UInstancedStaticMeshComponent* StaticMesh = ISMs[InstanceIndex];
 		if(StaticMesh == nullptr){
-			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::RemoveVoxel: StaticMesh is null"));
+			UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::HideVoxelByLocation: StaticMesh is null"));
 			return;
 		}
 		// Remove Instance
@@ -176,4 +176,8 @@ void AMC_Chunk::HideVoxelByLocation(FVector Location){
 		UE_LOG(LogTemp, Error, TEXT("AMC_Chunk::HideVoxelByLocation: Didn't hit and should have"));
 		return;
 	}
+}
+
+void AMC_Chunk::PlanChunk(FTransform Transform, int ChunkWith, int ChunkDepth, float ChunkNoiseDensity, int ChunkNoiseScale, float Chunk3dNoiseDensity, float Chunk3dNoiseCutOffBelowSurface, float Chunk3dNoiseCutOffAtSurface, int ChunkSizeXY, int ChunkVoxelSize){
+
 }

@@ -39,7 +39,7 @@ public:
 	TSet<FVector> VisibleVoxels;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Code", Meta = (ExposeOnSpawn=true, InstanceEditable=true))
-	float VoxelSize = 32;
+	int VoxelSize = 32;
 
 	UFUNCTION(BlueprintCallable, Category = "Code")
 	void AddVoxel(FTransform Transform, bool local=true, int InstanceIndex=0);
@@ -50,4 +50,7 @@ public:
 	TArray<FVector> FindNeighboor(FVector VoxelLocation);
 
 	void HideVoxelByLocation(FVector Location);
+
+	void PlanChunk(FTransform Transform, int ChunkWith, int ChunkDepth, float ChunkNoiseDensity, int ChunkNoiseScale, float Chunk3dNoiseDensity, float Chunk3dNoiseCutOffBelowSurface, float Chunk3dNoiseCutOffAtSurface, int ChunkSizeXY, int ChunkVoxelSize);
+
 };

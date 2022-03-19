@@ -41,7 +41,7 @@ public:
 
 
 	UPROPERTY(BlueprintReadWrite, Category = "Code")
-	int MaxRange = 300;
+	int MaxToolRange = 300;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Code")
 	float PlayerSpeed = 0.3;

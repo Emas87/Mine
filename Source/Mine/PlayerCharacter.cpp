@@ -74,7 +74,7 @@ bool APlayerCharacter::ViewTrace(FHitResult& OutHit, FVector& HitDirection, ACon
 	FRotator outRotation;
 	OwnerController -> GetPlayerViewPoint(outLocation, outRotation);
 
-	FVector End = outLocation + outRotation.Vector() * MaxRange;
+	FVector End = outLocation + outRotation.Vector() * MaxToolRange;
 	HitDirection = - outRotation.Vector();
 	DrawDebugLine(GetWorld(), outLocation, End , FColor::Red, true);
 
